@@ -1,0 +1,113 @@
+copy to input and draw on image
+  output_im = cvCloneImage(input_im);
+  cvCircle(output_im, cvPoint(50, 50), 25, CV_RGB(255, 0, 0), 4);
+  cvLine(output_im, cvPoint(0, 0), cvPoint(200, 300), CV_RGB(0, 0, 255), 8);
+
+separate channels into R,G B
+  output_im = cvCreateImage(
+    cvSize(input_im->width, input_im->height),
+    8, 1
+  );
+  cvSetImageCOI(input_im, 1);
+  cvCopy(input_im, output_im);
+
+rgb to b&w
+  output_im = cvCreateImage(
+    cvSize(input_im->width, input_im->height),
+    8, 1
+  );
+  cvCvtColor(input_im, output_im, CV_BGR2GRAY);
+
+Threshold
+  output_im = cvCreateImage(
+    cvSize(input_im->width, input_im->height),
+    8, 1
+  );
+  cvCvtColor(input_im, output_im, CV_BGR2GRAY);
+  cvThreshold(output_im, output_im, 128, 255, CV_THRESH_BINARY);
+
+isolate the bright thing
+  http://jungle.gradman.com/cv/im/static/dog.jpg
+  output_im = cvCreateImage(cvSize(input_im->width, input_im->height), 8, 1);
+  cvCvtColor(input_im, output_im, CV_BGR2GRAY);
+  cvThreshold(output_im, output_im, 185, 255, CV_THRESH_BINARY);
+  cvErode(output_im, output_im, NULL, 1);
+  cvDilate(output_im, output_im);
+
+RGB to HSV
+  http://jungle.gradman.com/cv/im/static/rainbow.jpg
+  cvCvtColor(input_im, input_im, CV_BGR2HSV);
+  output_im = cvCreateImage(cvSize(400, 400), 8, 1);
+  cvSetImageCOI(input_im, 2);
+  cvCopy(input_im, output_im);
+		
+JUGGLER
+	http://jungle.gradman.com/cv/im/static/juggler.jpg
+	output_im = cvCloneImage(input_im);
+	IplImage *hsv_im = cvCreateImage(
+	  cvSize(input_im->width, input_im->height),
+	  8, 3
+	);
+	IplImage *temp_im = cvCreateImage(
+	  cvSize(input_im->width, input_im->height),
+	  8, 1
+	);
+	cvCvtColor(input_im, hsv_im, CV_BGR2HSV);
+	int rows = input_im->height;
+	int cols = input_im->width;
+	cvZero(temp_im);
+	for (int row=0; row<rows; row++) {
+	  for (int col=0; col<cols; col++) {
+		CvScalar hsv = cvGet2D(hsv_im, row, col);
+		int h = hsv.val[0];
+		int v = hsv.val[2];
+		if ((170 < h || h > 175) && (v > 80)) {
+		  cvSet2D(temp_im, row, col, cvScalar(255));
+		}
+	  }
+	}
+	cvErode(temp_im, temp_im, NULL, 1);
+	CvMemStorage *storage = cvCreateMemStorage();
+	CvSeq *contours;
+	cvFindContours(temp_im, storage, &contours); // destroys temp
+	cvDrawContours(output_im, contours, CV_RGB(0,255,0), CV_RGB(0,255,0), 1);
+	
+
+Convolution
+  output_im = cvCloneImage(input_im);
+  float x = 1./9;
+  float vals[3][3] = {
+    {-1, 2, -1},
+    {-1, 2, -1},
+    {-1, 2, -1}
+  };
+  CvMat *kernel = cvCreateMatHeader(3, 3, CV_32FC1);
+  cvSetData(kernel, vals, 3*sizeof(float));
+
+  cvFilter2D(input_im, output_im, kernel);
+  
+getperspectivetransform
+  output_im = cvCloneImage(input_im);
+  CvPoint2D32f src_pts[4] = {{72, 64},{341, 78},{345, 275},{72, 280}};
+  int w=input_im->width, h=input_im->height;
+  CvPoint2D32f dst_pts[4] = {
+    {0, 0},{w, 0},{w, h},{0, h}
+  };
+  for (int i=0; i<4; i++)
+    cvCircle(output_im, cvPoint(src_pts[i].x, src_pts[i].y), 3, CV_RGB(0, 255, 0));
+  CvMat *pmat = cvCreateMat(3, 3, CV_64F);
+  cvGetPerspectiveTransform(src_pts, dst_pts, pmat);
+  cvWarpPerspective(input_im, output_im, pmat);
+
+pyr down
+  output_im = cvCreateImage(
+    cvSize(input_im->width/2, input_im->height/2),
+    8, 3
+  );
+  cvPyrDown(input_im, output_im);
+
+links
+	http://www.cs.brown.edu/courses/cs143/
+	http://www.eecs.berkeley.edu/~trevor/CS280Notes/
+	http://szeliski.org/Book/drafts/SzeliskiBook_20100903_draft.pdf
+
